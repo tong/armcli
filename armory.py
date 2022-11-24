@@ -73,18 +73,6 @@ def sdk(args):
     print(args)
     execute_blender_script('sdk')
 
-# def play(args):
-#     blend = get_main_blend_file(args.blend)
-#     #execute_blender_expr(blend, "bpy.ops.arm.play()")
-#     execute_blender_script(blend, "play")
-#     # print('play,,,,,,,,,,,,,,,,,')
-#     # print(args)
-#     # blend = args.blend
-#     # cmd = ["blender", "-b", blend, "--python", "blender/play.py"]
-#     # p = subprocess.run(cmd, capture_output=True)
-#     # print(p.returncode)
-#     # for l in p.stdout.decode("utf-8").split("\n"): print(l)
-
 argparser_main = argparse.ArgumentParser(prog='armory',description='Work seamlessly with Armory from the command line')
 #argparser_main.add_argument('command', choices=['build','public','clean'])
 
