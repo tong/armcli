@@ -8,8 +8,13 @@ import subprocess
 import sys
 from subprocess import PIPE
 
+if os.path.islink(sys.argv[0]):
+    symlink = os.readlink(sys.argv[0])
+    dir = os.path.dirname(symlink)
+else:
+    dir = os.path.dirname(sys.argv[0])
+script_dir = f"{dir}/blender"
 
-script_dir = os.path.dirname(sys.argv[0]) + "/blender"
 verbose = False
 
 armsdk_path = os.getenv("ARMSDK")
