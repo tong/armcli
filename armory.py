@@ -9,7 +9,8 @@ import sys
 from subprocess import PIPE
 
 verbose = False
-print_script_call = False
+print_blender_stdout = False
+print_script_call = True
 
 armsdk_path = os.getenv("ARMSDK")
 if armsdk_path == None:
@@ -25,7 +26,7 @@ if not os.path.exists(script_dir) or not os.path.isdir(script_dir):
     raise "cli scripts not found"
 
 
-def find_main_blend_file(blend=None):
+def find_main_blend_file(blend: str = None):
     if blend is None:
         dir = os.getcwd()
         blend = f"{dir}/{os.path.basename(dir)}.blend"
@@ -43,14 +44,16 @@ def execute_blender(args):
     cmd.extend(args)
     if print_script_call:
         print(" ".join(cmd))
-    p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
+    if print_blender_stdout:
+        p = subprocess.Popen(cmd, stderr=PIPE)
+    else:
+        p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
     while p.poll() is None:
-        #print(p.stdout.readline().decode("utf-8"), end="", file=sys.stdout)
-        print(p.stderr.readline().decode("utf-8"), end="", file=sys.stderr)
+        print(p.stderr.readline().decode("utf-8"), end="", file=sys.stdout)
     sys.exit(p.returncode)
 
 
-def execute_blender_script(script: str, blend=None, args=None):
+def execute_blender_script(script: str, blend: str = None, args=None):
     cmd = []
     if blend is not None:
         cmd.append(blend)
@@ -92,15 +95,22 @@ def cli_play(args):
     execute_blender_expr("bpy.ops.arm.play()", blend)
 
 
+def cli_exporters(args):
+    blend = find_main_blend_file(args.blend)
+    execute_blender_script(f"exporters_{args.command}", blend)
+
+
+def cli_renderpath(args):
+    execute_blender_script(f"renderpath_list", find_main_blend_file(args.blend))
+
+
 def cli_traits(args):
-    print(args)
     blend = find_main_blend_file(args.blend)
     execute_blender_script("traits", blend)
 
 
 def cli_kha(args):
-    print(args)
-    cmd = ['node',f'{armsdk_path}/Kha/make.js','--shaderversion','330']
+    cmd = ["node", f"{armsdk_path}/Kha/make.js", "--shaderversion", "330"]
     p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
     while p.poll() is None:
         print(p.stdout.readline().decode("utf-8"), end="", file=sys.stdout)
@@ -113,7 +123,16 @@ def cli_sdk(args):
 
 argparser = argparse.ArgumentParser(prog="armory")
 argparser.add_argument(
-    "--print-script-call", dest="print_script_call", action="store_true", help="print the call to blender"
+    "--print-script-call",
+    dest="print_script_call",
+    action="store_true",
+    help="print the call to blender",
+)
+argparser.add_argument(
+    "--print-blender-stdout",
+    dest="print_blender_stdout",
+    action="store_true",
+    help="print blenders stdout",
 )
 argparser.add_argument(
     "--verbose", dest="verbose", action="store_true", help="print verbose outpout"
@@ -142,6 +161,22 @@ parser_clean.set_defaults(func=cli_clean)
 # parser_play.add_argument('--renderpath', help='Default render path')
 # parser_play.set_defaults(func=play)
 
+parser_exporters = subparsers.add_parser("exporters", help="manage exporters")
+parser_exporters.add_argument("--blend", help="path to main blend file")
+parser_exporters.add_argument(
+    "command", choices=["list"], default="list", help="path to main blend file"
+)
+parser_exporters.set_defaults(func=cli_exporters)
+# exporters_subparsers = parser_exporters.add_subparsers()
+# parser_exporters_list = exporters_subparsers.add_parser('list')
+# parser_exporters_list.set_defaults(func=cli_exporters_list)
+# parser_exporters_list = parser_exporters.add_subparsers()
+# parser_exporters_list.add_argument("list")
+# parser_exporters.add_argument("command", choices=["add","remove","list"])
+
+parser_renderpath = subparsers.add_parser("renderpath", help="manage renderpaths")
+parser_renderpath.add_argument("--blend", help="path to blend file")
+parser_renderpath.set_defaults(func=cli_renderpath)
 # parser_traits = subparsers.add_parser('traits', help='manage traits')
 # parser_traits.add_argument('--blend', help='path to main blend file')
 # parser_traits.set_defaults(func=traits)
@@ -162,5 +197,6 @@ if len(sys.argv) == 1:
 
 args = argparser.parse_args()
 verbose = args.verbose
+print_blender_stdout = args.print_blender_stdout
 print_script_call = args.print_script_call
 args.func(args)
