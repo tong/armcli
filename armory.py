@@ -1,66 +1,67 @@
 #!/usr/bin/python
 
+""" armory cli """
+
 import argparse
-import glob
 import os
-import pathlib
 import subprocess
 import sys
 from subprocess import PIPE
 
-verbose = False
-print_blender_stdout = True
-print_script_call = True
+VERBOSE = False
+PRINT_BLENDER_STDOUT = False
 
 armsdk_path = os.getenv("ARMSDK")
-if armsdk_path == None:
+if armsdk_path is None:
     print("armsdk not found, set ARMSDK environment variable")
     sys.exit(1)
 
 if os.path.islink(sys.argv[0]):
-    dir = os.path.dirname(os.readlink(sys.argv[0]))
+    clidir = os.path.dirname(os.readlink(sys.argv[0]))
 else:
-    dir = os.path.dirname(sys.argv[0])
-script_dir = f"{dir}/blender"
+    clidir = os.path.dirname(sys.argv[0])
+script_dir = f"{clidir}/blender"
 if not os.path.exists(script_dir) or not os.path.isdir(script_dir):
-    raise "armcli/blender/ not found"
+    print("armcli/blender/ not found", file=sys.stderr)
+    sys.exit(1)
 
 
 def find_main_blend_file(blend: str = None):
     if blend is None:
-        dir = os.getcwd()
-        blend = f"{dir}/{os.path.basename(dir)}.blend"
+        cwd = os.getcwd()
+        blend = f"{cwd}/{os.path.basename(dir)}.blend"
         if not os.path.exists(blend):
             print("main blend file not found", file=sys.stderr)
             sys.exit(1)
         return blend
     if not os.path.exists(blend):
-        raise "blend file not found"
+        print('main blend file not found', file=sys.stderr)
+        sys.exit(1)
     return blend
 
 
-def execute_blender(args):
+def execute_blender(params):
     cmd = ["blender", "--background"]
-    cmd.extend(args)
-    if print_script_call:
+    cmd.extend(params)
+    if VERBOSE:
         print(" ".join(cmd))
-    if print_blender_stdout:
-        p = subprocess.Popen(cmd, stderr=PIPE)
+    if PRINT_BLENDER_STDOUT:
+        proc = subprocess.Popen(cmd, stderr=PIPE)
     else:
-        p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
-    while p.poll() is None:
-        print(p.stderr.readline().decode("utf-8"), end="", file=sys.stdout)
-    sys.exit(p.returncode)
+        proc = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
+    while proc.poll() is None:
+        print(proc.stderr.readline().decode("utf-8"), end="", file=sys.stdout)
+    sys.exit(proc.returncode)
 
 
-def execute_blender_script(script: str, blend: str = None, args=None):
+def execute_blender_script(script: str, blend: str = None, params=None):
     cmd = []
     if blend is not None:
         cmd.append(blend)
     cmd.extend(["--python", f"{script_dir}/{script}.py"])
-    if args is not None and len(args) > 0:
+    if params is not None and len(params) > 0:
         cmd.append("--")
-        cmd.extend(args)
+        cmd.extend(params)
     execute_blender(cmd)
 
 
@@ -72,56 +73,58 @@ def execute_blender_expr(expr: str, blend: str = None):
     execute_blender(cmd)
 
 
-def cli_build(args):
-    blend = find_main_blend_file(args.blend)
-    execute_blender_script("build", blend)
+def cli_build(_args):
+    execute_blender_script("build", find_main_blend_file(_args.blend))
 
 
-def cli_publish(args):
-    blend = find_main_blend_file(args.blend)
-    _args = []
-    if args.exporter is not None:
-        _args.append(args.exporter)
-    execute_blender_script("publish", blend, _args)
+def cli_publish(_args):
+    blend = find_main_blend_file(_args.blend)
+    params = []
+    if _args.exporter is not None:
+        params.append(_args.exporter)
+    execute_blender_script("publish", blend, params)
 
 
-def cli_clean(args):
-    blend = find_main_blend_file(args.blend)
+def cli_clean(_args):
+    blend = find_main_blend_file(_args.blend)
     execute_blender_script("clean", blend)
 
 
-def cli_play(args):
-    blend = find_main_blend_file(args.blend)
-    if args.camera is None: args.camera = ""
-    if args.scene is None: args.scene = ""
-    if args.renderpath is None: args.renderpath = ""
-    params = [args.runtime,args.camera,args.scene,args.renderpath]
+def cli_play(_args):
+    blend = find_main_blend_file(_args.blend)
+    if _args.camera is None:
+        _args.camera = ""
+    if _args.scene is None:
+        _args.scene = ""
+    if _args.renderpath is None:
+        _args.renderpath = ""
+    params = [_args.runtime, _args.camera, _args.scene, _args.renderpath]
     execute_blender_script("play", blend, params)
 
 
-def cli_exporters(args):
-    blend = find_main_blend_file(args.blend)
-    execute_blender_script(f"exporters_{args.command}", blend)
+def cli_exporters(_args):
+    blend = find_main_blend_file(_args.blend)
+    execute_blender_script(f"exporters_{_args.command}", blend)
 
 
-def cli_renderpath(args):
-    execute_blender_script(f"renderpath_list", find_main_blend_file(args.blend))
+def cli_renderpath(_args):
+    execute_blender_script("renderpath_list", find_main_blend_file(_args.blend))
 
 
-def cli_traits(args):
-    blend = find_main_blend_file(args.blend)
+def cli_traits(_args):
+    blend = find_main_blend_file(_args.blend)
     execute_blender_script("traits", blend)
 
 
-def cli_kha(args):
+def cli_kha(_args):
     cmd = ["node", f"{armsdk_path}/Kha/make.js", "--shaderversion", "330"]
-    p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
-    while p.poll() is None:
-        print(p.stdout.readline().decode("utf-8"), end="", file=sys.stdout)
-    sys.exit(p.returncode)
+    proc = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
+    while proc.poll() is None:
+        print(proc.stdout.readline().decode("utf-8"), end="", file=sys.stdout)
+    sys.exit(proc.returncode)
 
 
-def cli_sdk(args):
+def cli_sdk(_args):
     execute_blender_script("sdk")
 
 
@@ -158,12 +161,14 @@ parser_clean = subparsers.add_parser("clean", help="clean project")
 parser_clean.add_argument("--blend", help="path to main blend file")
 parser_clean.set_defaults(func=cli_clean)
 
-parser_play = subparsers.add_parser('play', help='play project')
-parser_play.add_argument('--blend', help='path to main blend file')
-parser_play.add_argument('--runtime', default='krom', choices=['krom','browser'], help='runtime to use')
-parser_play.add_argument('--camera', default='Scene', help='viewport camera')
-parser_play.add_argument('--scene', help='scene to launch')
-parser_play.add_argument('--renderpath', help='default render path')
+parser_play = subparsers.add_parser("play", help="play project")
+parser_play.add_argument("--blend", help="path to main blend file")
+parser_play.add_argument(
+    "--runtime", default="krom", choices=["krom", "browser"], help="runtime to use"
+)
+parser_play.add_argument("--camera", default="Scene", help="viewport camera")
+parser_play.add_argument("--scene", help="scene to launch")
+parser_play.add_argument("--renderpath", help="default render path")
 parser_play.set_defaults(func=cli_play)
 
 parser_exporters = subparsers.add_parser("exporters", help="manage exporters")
@@ -201,7 +206,7 @@ if len(sys.argv) == 1:
     sys.exit(1)
 
 args = argparser.parse_args()
-verbose = args.verbose
+VERBOSE = args.verbose
 print_blender_stdout = args.print_blender_stdout
-print_script_call = args.print_script_call
+#print_script_call = args.print_script_call
 args.func(args)

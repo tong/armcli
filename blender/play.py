@@ -1,4 +1,5 @@
-import sys, bpy
+import sys 
+import bpy
 
 wrd=bpy.data.worlds['Arm']
 si = sys.argv.index("--")+1
@@ -15,4 +16,3 @@ renderpath = sys.argv[si+3]
 if renderpath is not None and len(renderpath) > 0:
     wrd.arm_play_renderpath = renderpath
 bpy.ops.arm.play()
-
