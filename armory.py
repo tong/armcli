@@ -9,7 +9,7 @@ import sys
 from subprocess import PIPE
 
 verbose = False
-print_blender_stdout = False
+print_blender_stdout = True
 print_script_call = True
 
 armsdk_path = os.getenv("ARMSDK")
@@ -23,7 +23,7 @@ else:
     dir = os.path.dirname(sys.argv[0])
 script_dir = f"{dir}/blender"
 if not os.path.exists(script_dir) or not os.path.isdir(script_dir):
-    raise "cli scripts not found"
+    raise "armcli/blender/ not found"
 
 
 def find_main_blend_file(blend: str = None):
@@ -92,7 +92,11 @@ def cli_clean(args):
 
 def cli_play(args):
     blend = find_main_blend_file(args.blend)
-    execute_blender_expr("bpy.ops.arm.play()", blend)
+    if args.camera is None: args.camera = ""
+    if args.scene is None: args.scene = ""
+    if args.renderpath is None: args.renderpath = ""
+    params = [args.runtime,args.camera,args.scene,args.renderpath]
+    execute_blender_script("play", blend, params)
 
 
 def cli_exporters(args):
@@ -154,12 +158,13 @@ parser_clean = subparsers.add_parser("clean", help="clean project")
 parser_clean.add_argument("--blend", help="path to main blend file")
 parser_clean.set_defaults(func=cli_clean)
 
-# parser_play = subparsers.add_parser('play', help='run project')
-# parser_play.add_argument('--blend', help='path to main blend file')
-# parser_play.add_argument('--runtime', default='Krom', help='runtime to use')
-# parser_play.add_argument('--camera', default='Scene', help='viewport camera')
-# parser_play.add_argument('--renderpath', help='Default render path')
-# parser_play.set_defaults(func=play)
+parser_play = subparsers.add_parser('play', help='play project')
+parser_play.add_argument('--blend', help='path to main blend file')
+parser_play.add_argument('--runtime', default='krom', choices=['krom','browser'], help='runtime to use')
+parser_play.add_argument('--camera', default='Scene', help='viewport camera')
+parser_play.add_argument('--scene', help='scene to launch')
+parser_play.add_argument('--renderpath', help='default render path')
+parser_play.set_defaults(func=cli_play)
 
 parser_exporters = subparsers.add_parser("exporters", help="manage exporters")
 parser_exporters.add_argument("--blend", help="path to main blend file")
