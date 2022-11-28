@@ -17,16 +17,23 @@ ln -s <path-to-the-clone-of-this-repo>/armory.py $HOME/.local/bin/armory
 ```sh
 armory --help
 
-usage: armory [-h] [--verbose] {build,publish,clean,sdk} ...
+usage: armory [-h] [--print-script-call] [--print-blender-stdout] [--verbose] {build,publish,clean,play,exporters,renderpath,kha,sdk} ...
 
 positional arguments:
-  {build,publish,clean,sdk}
+  {build,publish,clean,play,exporters,renderpath,kha,sdk}
     build               build project
     publish             publish project
     clean               clean project
+    play                play project
+    exporters           manage exporters
+    renderpath          manage renderpaths
+    kha                 execute khamake
     sdk                 manage armsdk
 
 options:
   -h, --help            show this help message and exit
+  --print-script-call   print the call to blender
+  --print-blender-stdout
+                        print blenders stdout
   --verbose             print verbose outpout
 ```
