@@ -69,7 +69,7 @@ def execute_blender_expr(expr: str, blend: str = None):
     cmd = []
     if blend is not None:
         cmd.append(blend)
-    cmd.extend(["--python-expr", "'" + expr + "'"])
+    cmd.extend(["--python-expr", f"'{expr}'"])
     execute_blender(cmd)
 
 
