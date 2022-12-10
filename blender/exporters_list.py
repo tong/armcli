@@ -2,8 +2,7 @@ import sys
 import bpy
 
 wrd = bpy.data.worlds['Arm']
-i = 0
-for exporter in wrd.arm_exporterlist:
+for i, exporter in enumerate(wrd.arm_exporterlist):
     out = f"{i} {exporter.name}"
     out += f" target={exporter.arm_project_target}"
     out += f" rp={exporter.arm_project_rp}"
