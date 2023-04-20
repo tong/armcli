@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
-""" Armory cli """
-
+""" Armory CLI """
 
 import argparse
 import os
@@ -12,6 +11,7 @@ from subprocess import PIPE, STDOUT
 
 VERBOSE = False
 PRINT_BLENDER_STDOUT = False
+BLENDER_EXECUTEABLE = "blender"
 
 armsdk_path = os.getenv("ARMSDK")
 if armsdk_path is None:
@@ -48,7 +48,7 @@ def find_main_blend_file(blend: str = None):
 
 
 def execute_blender(params):
-    cmd = ["blender", "--background"]
+    cmd = [BLENDER_EXECUTEABLE, "--background"]
     cmd.extend(params)
     if VERBOSE:
         print(" ".join(cmd))
@@ -163,7 +163,7 @@ def cli_versioninfo(_args):
 
 
 def cli_sdk(_args):
-    execute_blender_script("versioninfo")
+    execute_blender_script("sdk")
 
 
 def cli_kha(_args):
@@ -186,23 +186,19 @@ def cli_kha(_args):
 #    print(d)
 # subprocess.run([''])
 
+# -----------------------------------------------------------------------------
 
 argparser = argparse.ArgumentParser(prog="armory")
-# argparser.add_argument(
-#     "--print-blender-call",
-#     dest="print_blender_call",
-#     action="store_true",
-#     help="print the call to blender",
-# )
 argparser.add_argument(
-    "--print-blender-stdout",
+    "--blender-stdout",
     dest="print_blender_stdout",
     action="store_true",
     help="print blenders stdout",
+    default=False
 )
-argparser.add_argument(
-    "--verbose", dest="verbose", action="store_true", help="print verbose outpout"
-)
+argparser.add_argument("--blender-executeable", help="path to blender executeable")
+argparser.add_argument("--blend", help="path to main blend file")
+argparser.add_argument("--verbose", dest="verbose", action="store_true", help="print verbose outpout")
 
 subparsers = argparser.add_subparsers()
 
@@ -232,9 +228,7 @@ parser_play.set_defaults(func=cli_play)
 
 parser_exporters = subparsers.add_parser("exporters", help="manage exporters")
 parser_exporters.add_argument("--blend", help="path to main blend file")
-parser_exporters.add_argument(
-    "command", choices=["list"], default="list", help="list exporters"
-)
+#parser_exporters.add_argument("command", choices=["list"], default="list", help="list exporters")
 parser_exporters.set_defaults(func=cli_exporters)
 # exporters_subparsers = parser_exporters.add_subparsers()
 # parser_exporters_list = exporters_subparsers.add_parser('list')
@@ -283,8 +277,10 @@ if len(sys.argv) == 1:
     argparser.print_help()
     sys.exit(1)
 
-
 args = argparser.parse_args()
 VERBOSE = args.verbose
 PRINT_BLENDER_STDOUT = args.print_blender_stdout
+if args.blender_executeable != None:
+    BLENDER_EXECUTEABLE = args.blender_executeable
 args.func(args)
+

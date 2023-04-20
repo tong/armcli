@@ -9,7 +9,7 @@ git clone https://github.com/tong/armcli.git
 
 Create a symlink somewhere in your PATH to `armcli/armory.py`:
 ```sh
-ln -s <path-to-the-clone-of-this-repo>/armory.py $HOME/.local/bin/armory
+ln -s <path-to-the-clone-of-this-repo>/armcli.py $HOME/.local/bin/armory
 ```
 
 
