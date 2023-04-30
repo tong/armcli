@@ -8,14 +8,8 @@ import subprocess
 import sys
 from subprocess import PIPE, STDOUT
 
+args = None
 
-VERBOSE = False
-PRINT_BLENDER_STDOUT = False
-BLENDER_EXECUTEABLE = "blender"
-
-armsdk_path = os.getenv("ARMSDK")
-if armsdk_path is None:
-    abort("armsdk not found, set ARMSDK environment variable")
 
 if os.path.islink(sys.argv[0]):
     clidir = os.path.dirname(os.readlink(sys.argv[0]))
@@ -28,8 +22,7 @@ if not os.path.exists(script_dir) or not os.path.isdir(script_dir):
 
 
 def abort(code=1, msg: str = None):
-    if msg is not None:
-        print(msg, file=sys.stderr)
+    if msg is not None: print(msg, file=sys.stderr)
     sys.exit(code)
 
 
@@ -49,11 +42,14 @@ def find_main_blend_file(blend: str = None):
 
 
 def execute_blender(params):
-    cmd = [BLENDER_EXECUTEABLE, "--background"]
+    blender_executeable = args.blender_executeable
+    if blender_executeable == None:
+        blender_executeable = "blender"
+    cmd = [blender_executeable, "--background"]
     cmd.extend(params)
-    if VERBOSE:
+    if args.verbose:
         print(" ".join(cmd))
-    if PRINT_BLENDER_STDOUT:
+    if args.print_blender_stdout: 
         proc = subprocess.Popen(cmd, stderr=PIPE)
     else:
         proc = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -105,15 +101,10 @@ def cli_clean(_args):
 
 
 def cli_play(_args):
-    #blend = find_main_blend_file(_args.blend)
-    if _args.camera is None:
-        _args.camera = ""
-    if _args.scene is None:
-        _args.scene = ""
-    if _args.renderpath is None:
-        _args.renderpath = ""
-    params = [_args.runtime, _args.camera, _args.scene, _args.renderpath]
-    execute_blender_script("play", find_main_blend_file(_args.blend), params)
+    if _args.camera is None: _args.camera = ""
+    if _args.scene is None: _args.scene = ""
+    if _args.renderpath is None: _args.renderpath = ""
+    execute_blender_script("play", find_main_blend_file(_args.blend), [_args.runtime, _args.camera, _args.scene, _args.renderpath])
 
 
 def cli_exporters(_args):
@@ -122,10 +113,6 @@ def cli_exporters(_args):
 
 def cli_renderpath(_args):
     execute_blender_script("renderpath_list", find_main_blend_file(_args.blend))
-
-
-# def cli_renderpath_list(_args):
-#     execute_blender_script("renderpath_list", find_main_blend_file(_args.blend))
 
 
 def cli_traits(_args):
@@ -168,7 +155,7 @@ def cli_sdk(_args):
 
 
 def cli_kha(_args):
-    cmd = ["node", f"{armsdk_path}/Kha/make.js", "--shaderversion", "330"]
+    cmd = ["node", f"{args.armsdk}/Kha/make.js", "--shaderversion", "330"]
     proc = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
     while proc.poll() is None:
         print(proc.stdout.readline().decode("utf-8"), end="", file=sys.stdout)
@@ -188,15 +175,10 @@ def cli_kha(_args):
 # subprocess.run([''])
 
 argparser = argparse.ArgumentParser(prog="armory")
-argparser.add_argument(
-    "--blender-stdout",
-    dest="print_blender_stdout",
-    action="store_true",
-    help="print blenders stdout",
-    default=False
-)
-argparser.add_argument("--blender-executeable", help="path to blender executeable")
+argparser.add_argument( "--blender-stdout", dest="print_blender_stdout", action="store_true", help="print blenders stdout", default=True)
+argparser.add_argument("--blender-executeable", dest="blender_executeable", action="store", default="blender", help="path to blender executeable")
 argparser.add_argument("--blend", help="path to main blend file")
+argparser.add_argument("--sdk", dest="armsdk", action="store", help="path to armsdk")
 argparser.add_argument("--verbose", dest="verbose", action="store_true", help="print verbose outpout")
 
 subparsers = argparser.add_subparsers()
@@ -217,9 +199,7 @@ parser_clean.set_defaults(func=cli_clean)
 
 parser_play = subparsers.add_parser("play", help="play project")
 parser_play.add_argument("--blend", help="path to main blend file")
-parser_play.add_argument(
-    "--runtime", default="krom", choices=["krom", "browser"], help="runtime to use"
-)
+parser_play.add_argument("--runtime", default="krom", choices=["krom", "browser"], help="runtime to use")
 parser_play.add_argument("--camera", default="Scene", help="viewport camera")
 parser_play.add_argument("--scene", help="scene to launch")
 parser_play.add_argument("--renderpath", help="default render path")
@@ -239,12 +219,7 @@ parser_exporters.set_defaults(func=cli_exporters)
 parser_renderpath = subparsers.add_parser("renderpath", help="manage renderpaths")
 parser_renderpath.add_argument("--blend", help="path to blend file")
 # group_renderpath = parser_renderpath.add_mutually_exclusive_group()
-parser_renderpath.add_argument(
-    "action",
-    choices=["list", "select", "add"],
-    default="list",
-    help="perform renderpath action",
-)
+parser_renderpath.add_argument( "action", choices=["list", "select", "add"], default="list", help="perform renderpath action")
 # group_renderpath.add_argument('select', action='store_true')
 parser_renderpath.set_defaults(func=cli_renderpath)
 
@@ -263,11 +238,8 @@ parser_renderpath.set_defaults(func=cli_renderpath)
 # parser_khamake = subparsers.add_parser("kha", help="execute khamake")
 # parser_khamake.set_defaults(func=cli_kha)
 
-# parser_launch = subparsers.add_parser("launch", help="launch application")
-# parser_launch.set_defaults(func=cli_launch)
-
-parser_test = subparsers.add_parser("versioninfo", help="print version info")
-parser_test.set_defaults(func=cli_versioninfo)
+parser_versioninfo = subparsers.add_parser("versioninfo", help="print version info")
+parser_versioninfo.set_defaults(func=cli_versioninfo)
 
 parser_sdk = subparsers.add_parser("sdk", help="manage armsdk")
 parser_sdk.set_defaults(func=cli_sdk)
@@ -277,9 +249,5 @@ if len(sys.argv) == 1:
     sys.exit(1)
 
 args = argparser.parse_args()
-VERBOSE = args.verbose
-PRINT_BLENDER_STDOUT = args.print_blender_stdout
-if args.blender_executeable != None:
-    BLENDER_EXECUTEABLE = args.blender_executeable
 args.func(args)
 
