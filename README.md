@@ -15,25 +15,26 @@ ln -s <path-to-the-clone-of-this-repo>/armcli.py $HOME/.local/bin/armory
 
 ## Usage
 ```sh
-armory --help
-
-usage: armory [-h] [--print-script-call] [--print-blender-stdout] [--verbose] {build,publish,clean,play,exporters,renderpath,kha,sdk} ...
+usage: armory [-h] [--blender-stdout] [--blender-executeable BLENDER_EXECUTEABLE] [--blend BLEND] [--sdk ARMSDK] [--verbose]
+              {build,publish,clean,play,exporters,renderpath,versioninfo,sdk} ...
 
 positional arguments:
-  {build,publish,clean,play,exporters,renderpath,kha,sdk}
+  {build,publish,clean,play,exporters,renderpath,versioninfo,sdk}
     build               build project
     publish             publish project
     clean               clean project
     play                play project
     exporters           manage exporters
     renderpath          manage renderpaths
-    kha                 execute khamake
+    versioninfo         print version info
     sdk                 manage armsdk
 
 options:
   -h, --help            show this help message and exit
-  --print-script-call   print the call to blender
-  --print-blender-stdout
-                        print blenders stdout
+  --blender-stdout      print blenders stdout
+  --blender-executeable BLENDER_EXECUTEABLE
+                        path to blender executeable
+  --blend BLEND         path to main blend file
+  --sdk ARMSDK          path to armsdk
   --verbose             print verbose outpout
 ```
