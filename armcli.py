@@ -38,12 +38,13 @@ def find_main_blend_file(blend: str = None):
         cwd = os.getcwd()
         blend = f"{cwd}/{os.path.basename(cwd)}.blend"
         if not os.path.exists(blend):
-            print("main blend file not found", file=sys.stderr)
-            sys.exit(1)
+            if os.path.exists("main.blend"):
+                return "main.blend"
+            else:
+                for e in os.scandir("."):
+                    if e.name.endswith('.blend') and e.is_file():
+                        return e.name
         return blend
-    if not os.path.exists(blend):
-        print("blend file not found")
-        sys.exit(1)
     return blend
 
 
@@ -66,9 +67,11 @@ def execute_blender(params):
     sys.exit(proc.returncode)
 
 
-def execute_blender_script(script: str, blend: str = None, params=None):
+def execute_blender_script(script: str, blend: str=None, params=None):
     cmd = []
     if blend is not None:
+        if not os.path.exists(blend):
+            abort(f'{blend} not found')
         cmd.append(blend)
     cmd.extend(["--python", f"{script_dir}/{script}.py"])
     if params is not None and len(params) > 0:
@@ -77,7 +80,7 @@ def execute_blender_script(script: str, blend: str = None, params=None):
     execute_blender(cmd)
 
 
-def execute_blender_expr(expr: str, blend: str = None):
+def execute_blender_expr(expr: str, blend: str=None):
     cmd = []
     if blend is not None:
         cmd.append(blend)
@@ -98,12 +101,11 @@ def cli_publish(_args):
 
 
 def cli_clean(_args):
-    blend = find_main_blend_file(_args.blend)
-    execute_blender_script("clean", blend)
+    execute_blender_script("clean", find_main_blend_file(_args.blend))
 
 
 def cli_play(_args):
-    blend = find_main_blend_file(_args.blend)
+    #blend = find_main_blend_file(_args.blend)
     if _args.camera is None:
         _args.camera = ""
     if _args.scene is None:
@@ -111,12 +113,11 @@ def cli_play(_args):
     if _args.renderpath is None:
         _args.renderpath = ""
     params = [_args.runtime, _args.camera, _args.scene, _args.renderpath]
-    execute_blender_script("play", blend, params)
+    execute_blender_script("play", find_main_blend_file(_args.blend), params)
 
 
 def cli_exporters(_args):
-    blend = find_main_blend_file(_args.blend)
-    execute_blender_script(f"exporters_{_args.command}", blend)
+    execute_blender_script(f"exporters_{_args.command}", find_main_blend_file(_args.blend))
 
 
 def cli_renderpath(_args):
@@ -185,8 +186,6 @@ def cli_kha(_args):
 # for d in os.listdir(d):
 #    print(d)
 # subprocess.run([''])
-
-# -----------------------------------------------------------------------------
 
 argparser = argparse.ArgumentParser(prog="armory")
 argparser.add_argument(
