@@ -10,7 +10,6 @@ from subprocess import PIPE, STDOUT
 
 args = None
 
-
 if os.path.islink(sys.argv[0]):
     clidir = os.path.dirname(os.readlink(sys.argv[0]))
 else:
@@ -42,14 +41,13 @@ def find_main_blend_file(blend: str = None):
 
 
 def execute_blender(params):
-    blender_executeable = args.blender_executeable
-    if blender_executeable == None:
-        blender_executeable = "blender"
-    cmd = [blender_executeable, "--background"]
+    blender_executable = args.blender_executable
+    if blender_executable == None:
+        blender_executable = "blender"
+    cmd = [blender_executable, "--background"]
     cmd.extend(params)
-    if args.verbose:
+    if args.verbose: 
         print(" ".join(cmd))
-    if args.print_blender_stdout: 
         proc = subprocess.Popen(cmd, stderr=PIPE)
     else:
         proc = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -64,12 +62,15 @@ def execute_blender(params):
 
 
 def execute_blender_script(script: str, blend: str=None, params=None):
+    path = f"{script_dir}/{script}.py"
+    if not os.path.exists(path):
+        abort(f'[{path}] not found')
     cmd = []
     if blend is not None:
         if not os.path.exists(blend):
             abort(f'{blend} not found')
         cmd.append(blend)
-    cmd.extend(["--python", f"{script_dir}/{script}.py"])
+    cmd.extend(["--python", path])
     if params is not None and len(params) > 0:
         cmd.append("--")
         cmd.extend(params)
@@ -112,7 +113,7 @@ def cli_exporters(_args):
 
 
 def cli_renderpath(_args):
-    execute_blender_script("renderpath_list", find_main_blend_file(_args.blend))
+    execute_blender_script(f"renderpath_{_args.action}", find_main_blend_file(_args.blend))
 
 
 def cli_traits(_args):
@@ -175,38 +176,39 @@ def cli_kha(_args):
 # subprocess.run([''])
 
 argparser = argparse.ArgumentParser(prog="armory")
-argparser.add_argument( "--blender-stdout", dest="print_blender_stdout", action="store_true", help="print blenders stdout", default=True)
-argparser.add_argument("--blender-executeable", dest="blender_executeable", action="store", default="blender", help="path to blender executeable")
-argparser.add_argument("--blend", help="path to main blend file")
+#argparser.add_argument("--blender-stdout", dest="print_blender_stdout", action="store_true", help="print blenders stdout", default=True)
+argparser.add_argument("-b", "--blend", help="path to main blend file")
+argparser.add_argument("-v", "--verbose", dest="verbose", action="store_true", help="print verbose outpout")
 argparser.add_argument("--sdk", dest="armsdk", action="store", help="path to armsdk")
-argparser.add_argument("--verbose", dest="verbose", action="store_true", help="print verbose outpout")
+argparser.add_argument("--blender-executable", dest="blender_executable", action="store", default="blender", help="path to blender executable")
+#argparser.add_argument("--json", help="Output in json format")
 
 subparsers = argparser.add_subparsers()
 
 parser_build = subparsers.add_parser("build", help="build project")
-parser_build.add_argument("--blend", help="path to main blend file")
-parser_build.add_argument("--exporter", help="exporter to use", type=ascii)
+parser_build.add_argument("-b", "--blend", help="path to main blend file")
+parser_build.add_argument("-e", "--exporter", help="exporter to use", type=ascii)
 parser_build.set_defaults(func=cli_build)
 
 parser_publish = subparsers.add_parser("publish", help="publish project")
-parser_publish.add_argument("--blend", help="path to main blend file")
-parser_publish.add_argument("--exporter", help="exporter to use")
+parser_publish.add_argument("-b", "--blend", help="path to main blend file")
+parser_publish.add_argument("-e", "--exporter", help="exporter to use")
 parser_publish.set_defaults(func=cli_publish)
 
 parser_clean = subparsers.add_parser("clean", help="clean project")
-parser_clean.add_argument("--blend", help="path to main blend file")
+parser_clean.add_argument("-b", "--blend", help="path to main blend file")
 parser_clean.set_defaults(func=cli_clean)
 
 parser_play = subparsers.add_parser("play", help="play project")
-parser_play.add_argument("--blend", help="path to main blend file")
-parser_play.add_argument("--runtime", default="krom", choices=["krom", "browser"], help="runtime to use")
-parser_play.add_argument("--camera", default="Scene", help="viewport camera")
-parser_play.add_argument("--scene", help="scene to launch")
-parser_play.add_argument("--renderpath", help="default render path")
+parser_play.add_argument("-b", "--blend", help="path to main blend file")
+parser_play.add_argument("-c", "--camera", default="Scene", help="viewport camera")
+parser_play.add_argument("-s", "--scene", help="scene to launch")
+parser_play.add_argument("-rp", "--renderpath", help="default render path")
+parser_play.add_argument("-rt", "--runtime", default="krom", choices=["krom", "browser"], help="runtime to use")
 parser_play.set_defaults(func=cli_play)
 
 parser_exporters = subparsers.add_parser("exporters", help="manage exporters")
-parser_exporters.add_argument("--blend", help="path to main blend file")
+parser_exporters.add_argument("-b", "--blend", help="path to main blend file")
 #parser_exporters.add_argument("command", choices=["list"], default="list", help="list exporters")
 parser_exporters.set_defaults(func=cli_exporters)
 # exporters_subparsers = parser_exporters.add_subparsers()
@@ -217,9 +219,9 @@ parser_exporters.set_defaults(func=cli_exporters)
 # parser_exporters.add_argument("command", choices=["add","remove","list"])
 
 parser_renderpath = subparsers.add_parser("renderpath", help="manage renderpaths")
-parser_renderpath.add_argument("--blend", help="path to blend file")
+parser_renderpath.add_argument("-b", "--blend", help="path to blend file")
 # group_renderpath = parser_renderpath.add_mutually_exclusive_group()
-parser_renderpath.add_argument( "action", choices=["list", "select", "add"], default="list", help="perform renderpath action")
+parser_renderpath.add_argument("action", choices=["list", "select", "add", "delete"], default="list", help="perform renderpath action")
 # group_renderpath.add_argument('select', action='store_true')
 parser_renderpath.set_defaults(func=cli_renderpath)
 
